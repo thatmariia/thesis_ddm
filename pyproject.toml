@@ -26,9 +26,8 @@ gpu = [
   "jax[cuda12-local]==0.6.1; sys_platform == 'linux'",
 ]
 
-[[tool.uv.index]]
-url = "https://storage.googleapis.com/jax-releases/jax_cuda_releases.html"
-format = "flat"
+[tool.uv]
+find-links = ["https://storage.googleapis.com/jax-releases/jax_cuda_releases.html"]
 
 [build-system]
 requires = ["hatchling>=1.25.0"]
