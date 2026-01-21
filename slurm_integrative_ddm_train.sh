@@ -12,15 +12,15 @@ set -euf -o pipefail
 
 # Load CUDA modules
 echo "Loading CUDA modules..."
+module purge  # purge needs to go before module load (otherwise it purges the loaded modules)
 module load 2023
-
-module purge
 
 # UV version
 UV_VERSION="0.9.5"
 
 # Cache directory
-export UV_CACHE_DIR=${TMPDIR}/uv_cache
+export UV_CACHE_DIR="${TMPDIR:-/tmp}/uv_cache"
+export UV_PROJECT_ENVIRONMENT="${TMPDIR:-/tmp}/thesis-ddm-venv"
 
 # Set JAX as the Keras backend for BayesFlow
 export KERAS_BACKEND=jax
@@ -44,11 +44,8 @@ echo "=========================================="
 echo "GPU Information:"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 
-# Create logs directory
-mkdir -p ${SLURM_SUBMIT_DIR}/logs
-
-# Download uv if needed
-if [ ! -e ${SLURM_SUBMIT_DIR}/uv ]; then
+# Download uv if needed (if there is no uv executable in the submit directory)
+if [ ! -x ${SLURM_SUBMIT_DIR}/uv ]; then
     echo "Downloading uv ${UV_VERSION}..."
     cd ${SLURM_SUBMIT_DIR}
     wget -q https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-musl.tar.gz -O - | tar xz --strip-components=1 -C . uv-x86_64-unknown-linux-musl/uv
@@ -57,11 +54,8 @@ fi
 
 cd ${SLURM_SUBMIT_DIR}
 
-# Ensure any CPU-only JAX is removed before installing GPU wheel
-./uv pip uninstall jax jaxlib -- -y || true
-
-# Install the CUDA wheel (bundles CUDA & cuDNN)
-./uv pip install -U "jax[cuda12]==0.6.1" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+# Install GPU-specific dependencies (jax with cuda)
+./uv sync --frozen --group gpu
 
 # Verify JAX GPU support
 echo "=========================================="
