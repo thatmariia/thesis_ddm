@@ -32,9 +32,9 @@ args = parser.parse_args()
 # =====================================================================================
 # Set up paths
 DIRECTED_MODEL_DIR = PROJECT_ROOT / "directed_model"
-DATA_DIR = DIRECTED_MODEL_DIR / "data"
-RESULTS_DIR = DIRECTED_MODEL_DIR / "results"
-FIGURES_ROOT = DIRECTED_MODEL_DIR / "figures"
+DATA_DIR = DIRECTED_MODEL_DIR / "data_new_sigma_z"
+RESULTS_DIR = DIRECTED_MODEL_DIR / "results_new_sigma_z"
+FIGURES_ROOT = DIRECTED_MODEL_DIR / "figures_new_sigma_z"
 FIGURES_ROOT.mkdir(exist_ok=True)
 
 # =====================================================================================

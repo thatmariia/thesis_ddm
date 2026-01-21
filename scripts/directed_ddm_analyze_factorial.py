@@ -26,14 +26,14 @@ from directed_model.analysis import (
     posterior_predictive_check,
     extract_parameter_samples,
 )
-from shared.plots import recovery_plot, compute_recovery_metrics
+from shared.plots import recovery_plot, compute_recovery_metrics, compute_interval_coverage
 
 # =====================================================================================
 # Set up paths
 DIRECTED_MODEL_DIR = PROJECT_ROOT / "directed_model"
-DATA_DIR = DIRECTED_MODEL_DIR / "data_new_sigma_z"
-RESULTS_DIR = DIRECTED_MODEL_DIR / "results_new_sigma_z"
-FIGURES_ROOT = DIRECTED_MODEL_DIR / "figures_new_sigma_z"
+DATA_DIR = DIRECTED_MODEL_DIR / "data_new_sigma_z_cross"
+RESULTS_DIR = DIRECTED_MODEL_DIR / "results_new_sigma_z_cross"
+FIGURES_ROOT = DIRECTED_MODEL_DIR / "figures_new_sigma_z_cross"
 FIGURES_ROOT.mkdir(exist_ok=True)
 
 # =====================================================================================
@@ -45,12 +45,18 @@ args = parser.parse_args()
 
 # Get all .mat files using the specified prefix
 mat_files = sorted(DATA_DIR.glob(f"{args.prefix}*.mat"))
+# all_mat_files = sorted(DATA_DIR.glob(f"{args.prefix}*.mat"))
+
+# Filter to only include SNR_no_noise conditions
+# mat_files = [f for f in all_mat_files if 'SNR_no_noise_' in f.name]
 
 if not mat_files:
     print(f"No .mat files found with prefix '{args.prefix}'!")
+    # print(f"No .mat files found with prefix '{args.prefix}' containing 'SNR_no_noise_'!")
     sys.exit()
 
 print(f"Found {len(mat_files)} .mat files to process with prefix '{args.prefix}'")
+# print(f"Found {len(mat_files)} .mat files to process with prefix '{args.prefix}' (SNR_no_noise only)")
 
 # =====================================================================================
 # Initialize combined lambda datasets
@@ -106,14 +112,14 @@ for mat_path in mat_files:
 
     # =====================================================================================
     # Run convergence diagnostics (R-Hat and ESS)
-    check_convergence(summary)
+    # check_convergence(summary)
 
     # Trace plots
-    trace_params = ("alpha", "tau", "beta", "eta", "mu_z", "sigma_z", "lambda", "b")
-    trace_figures = plot_trace_grids(df, fit, params_of_interest=trace_params, grid_cols=10)
-    for param_name, fig in trace_figures.items():
-        fig.savefig(fig_dir / f"trace_plots_{param_name}.png", dpi=300)
-        plt.close(fig)
+    # trace_params = ("alpha", "tau", "beta", "eta", "mu_z", "sigma_z", "lambda", "b")
+    # trace_figures = plot_trace_grids(df, fit, params_of_interest=trace_params, grid_cols=10)
+    # for param_name, fig in trace_figures.items():
+    #     fig.savefig(fig_dir / f"trace_plots_{param_name}.png", dpi=300)
+    #     plt.close(fig)
 
     # =====================================================================================
     # Parameter recovery
@@ -136,7 +142,8 @@ for mat_path in mat_files:
     plt.close(fig)
 
     # =====================================================================================
-    # Posterior Predictive Checks
+    '''
+    # Posterior Predictive Checks (DISABLED)
     true_params = {
         "alpha": true_vals["alpha"],
         "tau": true_vals["tau"],
@@ -153,16 +160,19 @@ for mat_path in mat_files:
     )
     fig.savefig(fig_dir / "posterior_predictive_checks_combined.png", dpi=300)
     plt.close(fig)
+    '''
 
     # =====================================================================================
     # Extended Recovery Metrics
     compute_recovery_metrics(post_draws, val_sims)
 
 # =====================================================================================
-# Process combined lambda datasets
-# Create condition display title mapping for combined plots
-# Create condition display title mapping for combined plots
+# Process combined lambda datasets and create recovery plot
 condition_display_titles = {
+    'SNR_no_noise_COUP_low_DIST_gaussian': r'Gaussian, No Noise, Low Coupling',
+    'SNR_no_noise_COUP_low_DIST_laplace': r'Laplace, No Noise, Low Coupling',
+    'SNR_no_noise_COUP_low_DIST_uniform': r'Uniform, No Noise, Low Coupling',
+
     'SNR_low_COUP_low_DIST_gaussian': r'Gaussian, Low SNR, Low Coupling',
     'SNR_low_COUP_low_DIST_laplace': r'Laplace, Low SNR, Low Coupling',
     'SNR_low_COUP_low_DIST_uniform': r'Uniform, Low SNR, Low Coupling',
@@ -171,6 +181,10 @@ condition_display_titles = {
     'SNR_high_COUP_low_DIST_laplace': r'Laplace, High SNR, Low Coupling',
     'SNR_high_COUP_low_DIST_uniform': r'Uniform, High SNR, Low Coupling',
 
+    'SNR_no_noise_COUP_high_DIST_gaussian': r'Gaussian, No Noise, High Coupling',
+    'SNR_no_noise_COUP_high_DIST_laplace': r'Laplace, No Noise, High Coupling',
+    'SNR_no_noise_COUP_high_DIST_uniform': r'Uniform, No Noise, High Coupling',
+
     'SNR_low_COUP_high_DIST_gaussian': r'Gaussian, Low SNR, High Coupling',
     'SNR_low_COUP_high_DIST_laplace': r'Laplace, Low SNR, High Coupling',
     'SNR_low_COUP_high_DIST_uniform': r'Uniform, Low SNR, High Coupling',  
@@ -178,21 +192,50 @@ condition_display_titles = {
     'SNR_high_COUP_high_DIST_gaussian': r'Gaussian, High SNR, High Coupling',
     'SNR_high_COUP_high_DIST_laplace': r'Laplace, High SNR, High Coupling',
     'SNR_high_COUP_high_DIST_uniform': r'Uniform, High SNR, High Coupling',
-
-    # No SNR conditions
-    'no_SNR_COUP_low_DIST_gaussian': r'Gaussian, Low Coupling',
-    'no_SNR_COUP_low_DIST_laplace': r'Laplace, Low Coupling',
-    'no_SNR_COUP_low_DIST_uniform': r'Uniform, Low Coupling',
-
-    'no_SNR_COUP_high_DIST_gaussian': r'Gaussian, High Coupling',
-    'no_SNR_COUP_high_DIST_laplace': r'Laplace, High Coupling',
-    'no_SNR_COUP_high_DIST_uniform': r'Uniform, High Coupling',
-
 }
 
-print(f"\n===  Recovery Plot for all lambdas ===")
-print(f"Conditions: {list(combined_lambda_estimates.keys())}")
-fig_high = recovery_plot(combined_lambda_estimates, combined_lambda_targets, 
-                        parameter_display_titles=condition_display_titles, fig_height=12, fig_width=15.5)
-fig_high.savefig(FIGURES_ROOT / f"recovery_plot_combined_lambda_{args.prefix}.png", dpi=300)
-plt.close(fig_high)
+print(f"\n===  Recovery Plot for all lambdas (split into two figures)===")
+# Separate conditions by coupling level
+low_coupling_conditions = [k for k in combined_lambda_estimates.keys() if "_COUP_low_" in k]
+high_coupling_conditions = [k for k in combined_lambda_estimates.keys() if "_COUP_high_" in k]
+
+coupling_groups = {
+    "Low Coupling": low_coupling_conditions,
+    "High Coupling": high_coupling_conditions
+}
+
+# Define SNR order for sorting
+snr_levels = ["no_noise", "low", "high"]
+
+def group_conditions_by_snr_level(conditions):
+    """Sort conditions by SNR level (no_noise, low, high)"""
+    grouped = {snr: [] for snr in snr_levels}
+    for cond in conditions:
+        for snr in snr_levels:
+            if snr in cond:
+                grouped[snr].append(cond)
+    return grouped
+
+# Plot one figure per coupling level
+for coupling_level, conditions in coupling_groups.items():
+    if not conditions:  # skip empty groups
+        print(f"No conditions for {coupling_level}, skipping...")
+        continue
+    
+    # Group by SNR
+    grouped_conditions = group_conditions_by_snr_level(conditions)
+    # Flatten in desired order
+    conditions_ordered = grouped_conditions["no_noise"] + grouped_conditions["low"] + grouped_conditions["high"]
+    
+    subset_estimates = {k: combined_lambda_estimates[k] for k in conditions_ordered}
+    subset_targets = {k: combined_lambda_targets[k] for k in conditions_ordered}
+    subset_titles = {k: condition_display_titles[k] for k in conditions_ordered}
+    
+    print(f"Plotting recovery plot for {coupling_level} conditions: {list(subset_estimates.keys())}")
+
+    # Recovery plot on specific axis
+    fig_lambda = recovery_plot(subset_estimates, subset_targets, 
+                             parameter_display_titles=subset_titles, fig_height=9, fig_width=15, is_all_coupling=True)
+    fig_lambda.savefig(FIGURES_ROOT / f"recovery_plot_combined_lambda_{coupling_level}_{args.prefix}.png", dpi=300)
+    plt.close(fig_lambda)
+

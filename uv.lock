@@ -1,6 +1,10 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.11.*"
+resolution-markers = [
+    "sys_platform == 'linux'",
+    "sys_platform != 'linux'",
+]
 
 [[package]]
 name = "absl-py"
@@ -1171,8 +1175,8 @@ name = "tensorflow-metal"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "six" },
-    { name = "wheel" },
+    { name = "six", marker = "sys_platform != 'linux'" },
+    { name = "wheel", marker = "sys_platform != 'linux'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e0/09/91b253511cd59b9964672567f36b412daf3c70f75fcb5e84468fafa939ac/tensorflow_metal-1.2.0-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:5fa7cee627031c14f45bd97ff0ef422cd6c3866199ff99cf29b94db6674ceb42", size = 1357400, upload-time = "2025-01-31T00:52:56.634Z" },
@@ -1211,7 +1215,7 @@ requires-dist = [
     { name = "bayesflow", specifier = ">=2.0.3" },
     { name = "cmdstanpy", specifier = ">=1.2.5" },
     { name = "ipykernel", specifier = ">=6.29.5" },
-    { name = "jax", specifier = ">=0.6.1" },
+    { name = "jax", specifier = "==0.6.1" },
     { name = "matplotlib", specifier = ">=3.10.3" },
     { name = "numba", specifier = ">=0.61.2" },
     { name = "numpy", specifier = "<=2.2.0" },

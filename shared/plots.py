@@ -1,15 +1,14 @@
 # =====================================================================================
-# Code for recovery plots copied from Michael Nunez. Adapted for our purposes.
+# Code for recovery plots copied from Michael Nunez. 
+# Adapted for our purposes.
+# Changes:
+# - 
 
 # =====================================================================================
 # Import modules
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
-import seaborn as sns
-from scipy.stats import gaussian_kde
-from scipy.stats import entropy
-from scipy.stats import wasserstein_distance
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
@@ -28,7 +27,7 @@ def compute_credible_interval_coverage(post_samples, true_values, level=0.95):
     return np.mean(coverage)
 
 # =====================================================================================
-def recovery_plot(estimates, targets, fig_width=15, fig_height=9, parameter_display_titles=None):
+def recovery_plot(estimates, targets, fig_width=15, fig_height=9, parameter_display_titles=None, ax=None, is_all_coupling=False):
     """
     Parameter recovery plots: true vs. estimated.
     Includes median, mean, 95% and 99% credible intervals.
@@ -45,7 +44,12 @@ def recovery_plot(estimates, targets, fig_width=15, fig_height=9, parameter_disp
         Figure height in inches
     parameter_display_titles : dict[str, str], optional
         Mapping from parameter names to display titles. If None, uses default mapping.
+    ax : matplotlib.axes.Axes, optional
+        Axis to plot on. If None, creates a new figure.
+    is_all_coupling : bool, default=False
+        If True, every parameter is a coupling parameter.
     """
+    
     # Default parameter display title mapping
     if parameter_display_titles is None:
         parameter_display_titles = {
@@ -63,18 +67,25 @@ def recovery_plot(estimates, targets, fig_width=15, fig_height=9, parameter_disp
             'b': r'$b$: Baseline drift rate'
         }
     
-    # Identify parameters - use order from parameter_display_titles if provided
+    # Identify parameters: use order from parameter_display_titles if provided
     if parameter_display_titles is not None:
-        # Use the order from parameter_display_titles, but only include params that exist in estimates
         params = [param for param in parameter_display_titles.keys() if param in estimates]
     else:
-        # Fall back to original order from estimates
         params = list(estimates.keys())
     
     # Create figure
-    fig = plt.figure(figsize=(fig_width, fig_height), tight_layout=True)
-    columns = 3
-    rows = int(np.ceil(len(params) / columns))
+    if ax is None:
+        fig = plt.figure(figsize=(fig_width, fig_height), tight_layout=True)
+        columns = 3
+        rows = int(np.ceil(len(params) / columns))
+        axes_list = [fig.add_subplot(rows, columns, i + 1) for i in range(len(params))]
+    else:
+        # If a single axis is passed, wrap it in a list to match the expected format
+        if isinstance(ax, plt.Axes):
+            axes_list = [ax]
+        else:
+            axes_list = ax # assume iterable of axes
+        fig = axes_list[0].figure
 
     # Plot properties
     LineWidths = np.array([2, 5])
@@ -85,14 +96,35 @@ def recovery_plot(estimates, targets, fig_width=15, fig_height=9, parameter_disp
 
     # Plot
     for i, param in enumerate(params):
-        ax = fig.add_subplot(rows, columns, i + 1)
+        ax_to_use = axes_list[i] # Use corresponding axis 
 
         # Store handles for legend
         h_95, h_99, h_median, h_mean, h_line = None, None, None, None, None
 
-        # Plot each participant
+        # Pre-compute posterior means and true values to identify NaN indices
+        posterior_means_all = np.mean(estimates[param], axis=1).flatten()
+        true_vals_all = targets[param].flatten()
+        
+        # Identify valid (non-NaN) indices
+        nan_mask = np.isnan(true_vals_all) | np.isnan(posterior_means_all)
+        valid_indices = np.where(~nan_mask)[0]
+        n_nan = np.sum(nan_mask)
+        n_total = len(true_vals_all)
+        
+        # Display name (needed early for logging)
+        display_name = parameter_display_titles.get(param, param)
+        
+        if n_nan > 0:
+            print(f"Note: {display_name} has {n_nan}/{n_total} NaN value(s), removed from analysis (using {n_total - n_nan} valid values)")
+
+        # Track if we've set legend handles (for first valid point)
+        first_valid = True
+
         for v in range(estimates[param].shape[0]):
-            # Compute percentiles
+            # Skip NaN participants
+            if nan_mask[v]:
+                continue
+                
             bounds = stats.scoreatpercentile(estimates[param][v, :], (0.5, 2.5, 97.5, 99.5))
 
             # 95% and 99% CI
@@ -100,62 +132,111 @@ def recovery_plot(estimates, targets, fig_width=15, fig_height=9, parameter_disp
                 # Plot credible intervals
                 credint = np.ones(100) * targets[param][v]
                 y = np.linspace(bounds[b], bounds[-1 - b], 100)
-                line = ax.plot(credint, y, color=Colors[b], linewidth=LineWidths[b])
-                if v == 0:
+                line = ax_to_use.plot(credint, y, color=Colors[b], linewidth=LineWidths[b])
+                if first_valid:
                     if b == 0:
-                       h_95 = line[0]
+                        h_95 = line[0]
                     else:
-                       h_99 = line[0]
-            
+                        h_99 = line[0]
+
             # Mark median
-            mmedian = ax.plot(targets[param][v], np.median(estimates[param][v, :]), 'o', color=[0, 0, 0], markersize=10)
-            if v == 0:
+            mmedian = ax_to_use.plot(targets[param][v], np.median(estimates[param][v, :]), 'o', color=[0, 0, 0], markersize=10)
+            if first_valid:
                 h_median = mmedian[0]
 
             # Mark mean
-            mmean = ax.plot(targets[param][v], np.mean(estimates[param][v, :]), '*', color=teal, markersize=10)
-            if v == 0:
+            mmean = ax_to_use.plot(targets[param][v], np.mean(estimates[param][v, :]), '*', color=teal, markersize=10)
+            if first_valid:
                 h_mean = mmean[0]
-
-        # Line y = x
-        tempx = np.linspace(np.min(targets[param]), np.max(targets[param]), num=100)
-        recoverline = ax.plot(tempx, tempx, color=orange, linewidth=3)
-        h_line = recoverline[0]
-
-        # Correlation between true values and posterior means
-        posterior_means = np.mean(estimates[param], axis=1).flatten()
-        true_vals = targets[param].flatten()
-        r, _ = stats.pearsonr(true_vals, posterior_means)
-        r_squared = r ** 2
-
-        # Set axis labels and title based on parameter type
-        ax.set_xlabel('True')
-        ax.set_ylabel('Posterior')
+                first_valid = False
         
-        # Use display title if available, otherwise use parameter name
-        display_name = parameter_display_titles.get(param, param)
-        ax.set_title(f"{display_name} (r = {r:.2f}, R² = {r_squared:.2f})")
+        # Get valid values for metrics and y=x line
+        true_vals_valid = true_vals_all[valid_indices]
+        posterior_means_valid = posterior_means_all[valid_indices]
         
-        # Add legend
+        # Line y = x (using valid values only)
+        if len(true_vals_valid) > 0:
+            tempx = np.linspace(np.min(true_vals_valid), np.max(true_vals_valid), num=100)
+            recoverline = ax_to_use.plot(tempx, tempx, color=orange, linewidth=3)
+            h_line = recoverline[0]
+
+        # Compute correlation on valid values
+        if len(true_vals_valid) > 1:
+            r, _ = stats.pearsonr(true_vals_valid, posterior_means_valid)
+            r_squared = r ** 2
+        else:
+            r_squared = np.nan
+
+        ax_to_use.set_xlabel('True')
+        ax_to_use.set_ylabel('Posterior')
+
+        # Check if coupling parameters
+        is_coupling = (param in ["gamma", "lambda"]) or is_all_coupling
+        if is_coupling:
+            # For coupling parameters: show coverage of zero and R²
+            # Filter estimates for valid indices only
+            estimates_valid = estimates[param][valid_indices, :]
+            if len(valid_indices) > 0:
+                coverage_zero = float(compute_interval_coverage(estimates_valid, target="low"))
+                title_text = f"{display_name}\nCover 0 = {coverage_zero:.2f}, R² = {r_squared:.2f}"
+                if n_nan > 0:
+                    title_text += f" (n={len(valid_indices)})"
+            else:
+                title_text = f"{display_name}\nNo valid data"
+        else:
+            if len(true_vals_valid) > 1:
+                # For non-coupling parameters: show R² and NRMSE
+                mse = mean_squared_error(true_vals_valid, posterior_means_valid)
+                rmse = np.sqrt(mse)
+                range_true = np.max(true_vals_valid) - np.min(true_vals_valid)
+                nrmse = rmse / range_true if range_true > 0 else np.nan
+                title_text = f"{display_name}\nR² = {r_squared:.2f}, NRMSE = {nrmse:.3f}"
+                if n_nan > 0:
+                    title_text += f" (n={len(valid_indices)})"
+            else:
+                print(f"Warning: {display_name} has insufficient valid values after NaN removal")
+                title_text = f"{display_name}\nR² = NaN, NRMSE = NaN"
+
+        ax_to_use.set_title(title_text)
+
+        # Add legend 
         if i == 0:
-            ax.legend([h_95, h_99, h_median, h_mean, h_line], ['95% CI', '99% CI', 'Median', 'Mean', 'y = x'], loc='upper left')
+            ax_to_use.legend([h_95, h_99, h_median, h_mean, h_line], ['95% CI', '99% CI', 'Median', 'Mean', 'y = x'], loc='upper left')
 
     return fig
 
 # =====================================================================================
-def compute_credible_intervals(gamma_estimates, ci=95):
-    n_participants = gamma_estimates.shape[0]
-    lower_bounds = np.zeros(n_participants)
-    upper_bounds = np.zeros(n_participants)
+# Compute interval coverage of zero for coupling parameters
+def compute_interval_coverage(post_samples, low_range=None, high_range=None, target="low"):
+    """
+    Computes proportion of 95% credible intervals that cover zero.
 
-    lower_p = (100 - ci) / 2
-    upper_p = 100 - lower_p
+    Parameters
+    ----------
+    post_samples : np.ndarray
+        Posterior samples per participant: shape (n_participants, n_samples)
+    low_range : tuple, optional
+        Unused. Kept for backward compatibility.
+    high_range : list of tuples, optional
+        Unused. Kept for backward compatibility.
+    target : str, default 'low'
+        Only 'low' is supported. Other values will raise an error.
 
-    for i in range(n_participants):
-        lower_bounds[i] = np.percentile(gamma_estimates[i, :], lower_p)
-        upper_bounds[i] = np.percentile(gamma_estimates[i, :], upper_p)
+    Returns
+    -------
+    float
+        Proportion of credible intervals that cover zero.
+    """
+    n_participants = post_samples.shape[0]
+    lower_bounds = np.percentile(post_samples, 2.5, axis=1)
+    upper_bounds = np.percentile(post_samples, 97.5, axis=1)
 
-    return lower_bounds, upper_bounds
+    if target == "low":
+        covered = (lower_bounds <= 0) & (upper_bounds >= 0)
+    else:
+        raise ValueError("Only target='low' is supported. High-range coverage has been removed.")
+
+    return float(np.mean(covered))
 
 # =====================================================================================
 # Compute recovery metrics
@@ -191,6 +272,17 @@ def compute_recovery_metrics(post_draws, val_sims):
         coverage_95 = compute_credible_interval_coverage(samples, true_values, level=0.95)
         coverage_99 = compute_credible_interval_coverage(samples, true_values, level=0.99)
 
-        print("{:<10} {:>10.3f} {:>10.3f} {:>10.3f} {:>10.3f}".format(
-            param_name, r2, nrmse, coverage_95, coverage_99
-        ))
+        # Coupling-specific interval coverage (only coverage of zero retained)
+        low_cover = np.nan
+        if "gamma" in param_name or "lambda" in param_name:
+            low_cover = compute_interval_coverage(samples, target="low")
+
+        # Unified print line
+        if np.isnan(low_cover):
+            print("{:<10} {:>10.3f} {:>10.3f} {:>10.3f} {:>10.3f}".format(
+                param_name, r2, nrmse, coverage_95, coverage_99
+            ))
+        else:
+            print("{:<10} {:>10.3f} {:>10.3f} {:>10.3f} {:>10.3f}   (Cover 0: {:>5.3f})".format(
+                param_name, r2, nrmse, coverage_95, coverage_99, low_cover
+            ))

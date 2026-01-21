@@ -4,7 +4,7 @@
 // - alpha: The boundary separation.
 // - tau: The non-decision time.
 // - beta: The bias/starting point parameter.
-// - mu_z: The mean of the latent variable.
+// - mu_z: The mean of the latent variable (constrained to 0 via bounds).
 // - sigma_z: The standard deviation of the latent variable.
 // - lambda: The lambda/scaling parameter.
 // - b: The intercept parameter.
@@ -26,7 +26,7 @@ parameters {
     vector<lower=0.001, upper=0.99>[nparts] beta;   // Starting point bias (per participant)
     vector<lower=0.5, upper=1>[nparts] tau_raw;     // Raw non-decision time truncated (per participant)
     vector<lower=0.001, upper=5>[nparts] eta;       // Within-trial noise ensure eta > 0 (per participant)
-    vector[nparts] mu_z;                            // Latent variable mean (per participant)
+    // vector<lower=0, upper=0>[nparts] mu_z;       // Latent variable mean (fixed at 0)
     vector<lower=0.001>[nparts] sigma_z;            // Latent variable SD ensure sigma_z > 0 (per participant)
     vector[nparts] lambda;                          // Effect of z on drift rate (per participant)
     vector[nparts] b;                               // Drift rate baseline (per participant)
@@ -34,6 +34,9 @@ parameters {
 
 // ------------------------------------------------------------------------------
 transformed parameters {
+    // Latent variable mean set to zero
+    vector[nparts] mu_z = rep_vector(0, nparts);
+
     // Delta estimates from lambda, z, b
     array[N] real delta;
     for (i in 1:N) {
@@ -47,13 +50,14 @@ transformed parameters {
     }
 }
 
+
 // ------------------------------------------------------------------------------
 model {
     // Priors
     alpha ~ normal(1.5, 0.3);
     beta ~ normal(0.5, 0.20); 
     tau_raw ~ normal(0.4, 0.1);
-    mu_z ~ normal(0, 1);
+    // mu_z constrained to 0 via bounds (no prior needed)
     sigma_z ~ normal(0, 1) T[0, ];
     lambda ~ normal(0, 1);
     b ~ normal(0, 1); 

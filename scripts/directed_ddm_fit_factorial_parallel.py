@@ -1,3 +1,6 @@
+"""
+Fit directed DDM to data files in parallel
+"""
 # =====================================================================================
 # Import modules
 import sys
@@ -10,13 +13,13 @@ from concurrent.futures import ProcessPoolExecutor
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
-from directed_model.simulation import fit_directed_ddm
+from directed_model.simulation_new_sigma_z_cross import fit_directed_ddm
 
 SEED = 2025
 
 # Project directories
 DIRECTED_MODEL_DIR = PROJECT_ROOT / 'directed_model'
-DATA_DIR = DIRECTED_MODEL_DIR / 'data'
+DATA_DIR = DIRECTED_MODEL_DIR / 'data_new_sigma_z_cross_empirical'
 
 def process_mat_file(mat_file):
     """Process a single mat file and fit the model."""
@@ -24,7 +27,7 @@ def process_mat_file(mat_file):
 
     # Check if results already exist
     base = Path(mat_file).stem
-    out_dir = DIRECTED_MODEL_DIR / 'results' / base
+    out_dir = DIRECTED_MODEL_DIR / 'results_new_sigma_z_cross_empirical' / base
 
     if out_dir.exists():
         print(f"Results already exist for {base}. Skipping...")
@@ -67,7 +70,7 @@ parser.add_argument('--prefix', type=str, default='ddmdata_',
 args = parser.parse_args()
 
 # Get all mat files using the specified prefix
-mat_files = sorted(DATA_DIR.glob(f"{args.prefix}*.mat"))
+mat_files = sorted(DATA_DIR.glob(f"{args.prefix}*.mat"))[:18]
 
 if not mat_files:
     print(f"No .mat files found with prefix '{args.prefix}'!")
