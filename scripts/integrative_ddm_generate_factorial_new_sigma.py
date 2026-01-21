@@ -19,7 +19,7 @@ from integrative_model.simulation import likelihood
 
 # Setup paths and directories
 INTEGRATIVE_MODEL_DIR = PROJECT_ROOT / "integrative_model"
-DATA_DIR = INTEGRATIVE_MODEL_DIR / "data_new_sigma"
+DATA_DIR = INTEGRATIVE_MODEL_DIR / "data_new_sigma_new_conditions"
 
 # =====================================================================================
 print("Generating factorial integrative DDM data...")
@@ -33,12 +33,12 @@ seed = 2025
 np.random.seed(seed)
 
 # Conditions for simulation
-snr_levels = ["low", "high"]
+snr_levels = ["no_noise", "low", "high"]
 coupling_levels = ["low", "high"]
 error_distributions = ["laplace", "gaussian", "uniform"]
 
 # SNR controls sigma (P300 noise level)
-sigma_conditions = {"low": 5, "high": 0}  # low SNR = high noise
+sigma_conditions = {"no_noise": 0, "low": 5, "high": 0}  # low SNR = high noise
 
 # Coupling controls gamma (DDM-P300 coupling strength)
 gamma_conditions = {
@@ -70,7 +70,7 @@ def prior_new_sigma():
     mu_delta = np.random.normal(0, 1)
     eta_delta = np.random.uniform(0, 2)
     gamma = np.random.uniform(-3, 3)
-    sigma = truncated_normal(0.15, 0.05, 0.01, 2)
+    sigma = truncated_normal(0.10, 0.05, 0.01, 2)
     
     # Return dictionary of parameters
     return dict(
@@ -127,6 +127,8 @@ for snr in snr_levels:
                 # Modify sigma based on SNR condition
                 if snr == "low":
                     params["sigma"] = params["sigma"] * sigma_conditions[snr]
+                elif snr == "no_noise":
+                    params["sigma"] = 0
                 else:
                     params["sigma"] = params["sigma"]
 

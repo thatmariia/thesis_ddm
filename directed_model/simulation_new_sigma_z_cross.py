@@ -19,7 +19,7 @@ def prior(nparts):
     alpha = np.random.uniform(0.8, 2, size=nparts)
     tau = np.random.uniform(0.15, 0.6, size=nparts)
     beta = np.random.uniform(0.3, 0.7, size=nparts)
-    mu_z = np.random.normal(0, 1, size=nparts)
+    mu_z = np.zeros(nparts)  # Fixed at 0
     
     # High SNR condition: low noise values (truncated normal with low values)
     sigma_z = truncated_normal(0.1, 0.05, 0.01, 2, size=nparts)
@@ -164,7 +164,7 @@ def generate_directed_ddm_data(ntrials=100, nparts=100,
     snr : str or None
         Signal-to-noise ratio condition: 'low', 'high', 'no_noise', or 'base'
     coupling : str or None
-        Coupling condition: 'low', 'high', or 'base' 
+        Coupling condition: 'low', 'high', 'zero', or 'base' 
     dist : str or None
         Error distribution: 'laplace', 'gaussian', 'uniform', or 'base'
 
@@ -193,6 +193,8 @@ def generate_directed_ddm_data(ntrials=100, nparts=100,
         signs = np.random.choice([-1, 1], size=nparts)
         magnitudes = np.random.uniform(2, 3, size=nparts)
         lambda_param = signs * magnitudes
+    elif coupling == 'zero': # no coupling
+        lambda_param = np.zeros(nparts)
     else:
         raise ValueError(f"Unknown coupling condition: {coupling}")
     
@@ -333,7 +335,7 @@ def fit_directed_ddm(mat_file_path, chains=4, parallel_chains=4, iter_sampling=1
     file_dir = Path(__file__).resolve().parent
     
     # Load Stan model
-    model = cmdstanpy.CmdStanModel(stan_file=str(file_dir / 'directed_ddm.stan'))
+    model = cmdstanpy.CmdStanModel(stan_file=str(file_dir / 'directed_ddm_cross.stan'))
     
     # Load data from .mat file
     genparam = sio.loadmat(mat_file_path)

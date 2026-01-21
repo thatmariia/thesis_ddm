@@ -36,10 +36,10 @@ FIGURES_DIR = INTEGRATIVE_MODEL_DIR / "figures"
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
 # Define a suffix for model and history files
-model_name = f"integrative_ddm_seed_{SEED}_150epochs"
+model_name = f"integrative_ddm_seed_{SEED}"
 
 # Set checkpoint path relative to current file - include seed in filename
-CHECKPOINT_PATH = CHECKPOINTS_DIR / f"checkpoint_{model_name}_150epochs.keras"
+CHECKPOINT_PATH = CHECKPOINTS_DIR / f"checkpoint_{model_name}_variable_trials.keras"
 
 # =====================================================================================
 # Main training 
@@ -86,7 +86,7 @@ else:
     print("No checkpoint found, creating new approximator...")
 
     history = workflow.fit_online(
-        epochs=150, 
+        epochs=500, # probably needed to train with variable number of trials for convergence
         batch_size=64, 
         num_batches_per_epoch=200, 
         validation_data=10000

@@ -1,7 +1,7 @@
 # =====================================================================================
-# Generate data across 2x2x3 factorial design:
-# - SNR (low/high): controls sigma_z
-# - Coupling (low/high): controls lambda_param
+# Generate data across 3x3x3 factorial design:
+# - SNR (low/high/no_noise): controls sigma_z
+# - Coupling (low/high/zero): controls lambda_param
 # - Error distribution: laplace, gaussian, uniform
 # =====================================================================================
 # Import modules
@@ -13,9 +13,9 @@ import sys
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
-from directed_model.simulation_new_sigma_z import generate_directed_ddm_data, save_simulation_data
+from directed_model.simulation_new_sigma_z_cross import generate_directed_ddm_data, save_simulation_data
 
-DATA_DIR = PROJECT_ROOT / 'directed_model' / 'data_new_sigma_z'
+DATA_DIR = PROJECT_ROOT / 'directed_model' / 'data_new_sigma_z_cross'
 
 ntrials = 100
 nparts = 100
@@ -27,8 +27,8 @@ seed = 2025
 np.random.seed(seed)
 
 # Conditions for simulation
-snr_levels = ['low', 'high'] 
-coupling_levels = ['low', 'high']
+snr_levels = ['low', 'high', 'no_noise'] 
+coupling_levels = ['low', 'high', 'zero']
 error_distributions = ['laplace', 'gaussian', 'uniform']
 
 # Generate data for each condition

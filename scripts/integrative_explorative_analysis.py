@@ -28,7 +28,7 @@ from integrative_model.simulation import prior, likelihood
 # Paths and config
 CHECKPOINT = "checkpoint_integrative_ddm_seed_12_150epochs.keras"
 CHECKPOINTS_DIR = PROJECT_ROOT / "integrative_model" / "checkpoints"
-DATA_DIR = PROJECT_ROOT / "integrative_model" / "data"
+DATA_DIR = PROJECT_ROOT / "integrative_model" / "data_new_sigma_new_conditions"
 CHECKPOINT_PATH = CHECKPOINTS_DIR / CHECKPOINT
 
 # =====================================================================================
@@ -48,25 +48,22 @@ approximator = keras.saving.load_model(CHECKPOINT_PATH)
 
 # =====================================================================================
 # Find data files
-matlab_files = sorted(DATA_DIR.glob(f"{args.prefix}*_including_delta.mat"))
+matlab_files = sorted(DATA_DIR.glob(f"{args.prefix}*.mat"))
 if not matlab_files:
-    print(f"No .mat files found with pattern '{args.prefix}*_including_delta.mat'!")
+    print(f"No .mat files found with pattern '{args.prefix}*.mat'!")
     sys.exit()
 
 # =====================================================================================
 # Run entanglement analysis
 for matlab_file in matlab_files:
-    condition_name = matlab_file.stem.replace(f"{args.prefix}", "").replace("_including_delta", "")
-    if condition_name.startswith("data_"):
-        condition_name = condition_name.replace("data_", "")
-
+    condition_name = matlab_file.stem.replace(f"{args.prefix}", "")
     data = sio.loadmat(matlab_file)
     nparts = data["nparts"][0][0]
     ntrials = data["ntrials"][0][0]
 
     # Extract true values
     gamma_true = data["gamma"].T.flatten()                          # shape: (nparts,)
-    # For _including_delta files, use mu_delta as the participant-level mean δᵢ
+    # Use mu_delta as the participant-level mean δᵢ
     mean_delta = data["mu_delta"].T.flatten()                       # participant-level mean δᵢ
 
     # Prepare input for inference

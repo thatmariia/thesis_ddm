@@ -33,18 +33,20 @@ from bayesflow.simulators import make_simulator
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
+# Import modules for integrative DDM analysis
 from integrative_model.simulation import prior, likelihood
 from integrative_model.analysis import calibration_histogram
 from shared.plots import recovery_plot, compute_recovery_metrics
 
+# Load checkpoint
 CHECKPOINT = "checkpoint_integrative_ddm_seed_12_150epochs.keras"
 
 # =====================================================================================
 # Setup paths and directories
 INTEGRATIVE_MODEL_DIR = PROJECT_ROOT / "integrative_model"
 CHECKPOINTS_DIR = INTEGRATIVE_MODEL_DIR / "checkpoints"
-FIGURES_ROOT = INTEGRATIVE_MODEL_DIR / "figures_new_sigma"
-DATA_DIR = INTEGRATIVE_MODEL_DIR / "data_new_sigma"
+FIGURES_ROOT = INTEGRATIVE_MODEL_DIR / "figures_new_sigma_new_conditions"
+DATA_DIR = INTEGRATIVE_MODEL_DIR / "data_new_sigma_new_conditions"
 CHECKPOINT_PATH = CHECKPOINTS_DIR / CHECKPOINT
 
 # =====================================================================================
@@ -163,29 +165,7 @@ for matlab_file in matlab_files:
         recovery_filename = f"recovery_plot_{condition_name}.png"
         f.savefig(figdir / recovery_filename)
         print(f"Saved recovery plot: {recovery_filename}")
-
-    # =====================================================================================
-    # Simulation-Based Calibration for current condition
-    print(f"Performing calibration analysis for {condition_name}...")
-
-    # Filter reshaped_data to only include parameter keys
-    val_sims_params = {k: v for k, v in reshaped_data.items() if k in parameter_names}
-
-    # Calibration histogram
-    sbc = calibration_histogram(
-        estimates=post_draws,
-        targets=val_sims_params,
-        variable_keys=parameter_names,
-        num_bins=10,
-        binomial_interval=0.99,
-        label_fontsize=16,
-        title_fontsize=18,
-    )
-    sbc_filename = f"calibration_histogram_{condition_name}.png"
-    sbc.savefig(figdir / sbc_filename)
-    print(f"Saved calibration histogram: {sbc_filename}")
-    plt.close(sbc)  # Close figure to free memory   
-
+    
     # =====================================================================================
     # Compute recovery metrics
     print(f"\nComputing recovery metrics for {condition_name}...")
@@ -198,10 +178,15 @@ for matlab_file in matlab_files:
     print(f"Completed analysis for {condition_name}")
 
 # =====================================================================================
-# Process combined gamma datasets
-
 # Create condition display title mapping for combined plots
 condition_display_titles = {
+    'SNR_no_noise_COUP_low_DIST_gaussian': r'Gaussian, No Noise, Low Coupling',
+    'cross_SNR_no_noise_COUP_low_DIST_gaussian': r'Gaussian, No Noise, Low Coupling',
+    'SNR_no_noise_COUP_low_DIST_laplace': r'Laplace, No Noise, Low Coupling',
+    'cross_SNR_no_noise_COUP_low_DIST_laplace': r'Laplace, No Noise, Low Coupling',
+    'SNR_no_noise_COUP_low_DIST_uniform': r'Uniform, No Noise, Low Coupling',
+    'cross_SNR_no_noise_COUP_low_DIST_uniform': r'Uniform, No Noise, Low Coupling',
+
     'SNR_low_COUP_low_DIST_gaussian': r'Gaussian, Low SNR, Low Coupling',
     'cross_SNR_low_COUP_low_DIST_gaussian': r'Gaussian, Low SNR, Low Coupling',
     'SNR_low_COUP_low_DIST_laplace': r'Laplace, Low SNR, Low Coupling',
@@ -216,6 +201,13 @@ condition_display_titles = {
     'SNR_high_COUP_low_DIST_uniform': r'Uniform, High SNR, Low Coupling',
     'cross_SNR_high_COUP_low_DIST_uniform': r'Uniform, High SNR, Low Coupling',
 
+    'SNR_no_noise_COUP_high_DIST_gaussian': r'Gaussian, No Noise, High Coupling',
+    'cross_SNR_no_noise_COUP_high_DIST_gaussian': r'Gaussian, No Noise, High Coupling',
+    'SNR_no_noise_COUP_high_DIST_laplace': r'Laplace, No Noise, High Coupling',
+    'cross_SNR_no_noise_COUP_high_DIST_laplace': r'Laplace, No Noise, High Coupling',
+    'SNR_no_noise_COUP_high_DIST_uniform': r'Uniform, No Noise, High Coupling',
+    'cross_SNR_no_noise_COUP_high_DIST_uniform': r'Uniform, No Noise, High Coupling',
+
     'SNR_low_COUP_high_DIST_gaussian': r'Gaussian, Low SNR, High Coupling',
     'cross_SNR_low_COUP_high_DIST_gaussian': r'Gaussian, Low SNR, High Coupling',
     'SNR_low_COUP_high_DIST_laplace': r'Laplace, Low SNR, High Coupling',
@@ -229,28 +221,53 @@ condition_display_titles = {
     'cross_SNR_high_COUP_high_DIST_laplace': r'Laplace, High SNR, High Coupling',
     'SNR_high_COUP_high_DIST_uniform': r'Uniform, High SNR, High Coupling',
     'cross_SNR_high_COUP_high_DIST_uniform': r'Uniform, High SNR, High Coupling',
-
-    'no_SNR_COUP_low_DIST_gaussian': r'Gaussian, Low Coupling',
-    'cross_COUP_low_DIST_gaussian': r'Gaussian, Low Coupling',
-    'no_SNR_COUP_low_DIST_laplace': r'Laplace, Low Coupling',
-    'cross_COUP_low_DIST_laplace': r'Laplace, Low Coupling',
-    'no_SNR_COUP_low_DIST_uniform': r'Uniform, Low Coupling',
-    'cross_COUP_low_DIST_uniform': r'Uniform, Low Coupling',
-
-    'no_SNR_COUP_high_DIST_gaussian': r'Gaussian, High Coupling',
-    'cross_COUP_high_DIST_gaussian': r'Gaussian, High Coupling',
-    'no_SNR_COUP_high_DIST_laplace': r'Laplace, High Coupling',
-    'cross_COUP_high_DIST_laplace': r'Laplace, High Coupling',
-    'no_SNR_COUP_high_DIST_uniform': r'Uniform, High Coupling',
-    'cross_COUP_high_DIST_uniform': r'Uniform, High Coupling',
 }
 
-print(f"\n===  Recovery Plot for all gammas ===")
-print(f"Conditions: {list(combined_gamma_estimates.keys())}")
-fig_gamma = recovery_plot(combined_gamma_estimates, combined_gamma_targets, 
-                         parameter_display_titles=condition_display_titles, fig_height=12, fig_width=15.5)
-fig_gamma.savefig(FIGURES_ROOT / f"recovery_plot_combined_gamma_{args.prefix}.png", dpi=300)
-plt.close(fig_gamma)
+print(f"\n===  Recovery Plot for all gammas (split into two figures)===")
+
+# Separate conditions by coupling level
+low_coupling_conditions = [k for k in combined_gamma_estimates.keys() if "_COUP_low_" in k]
+high_coupling_conditions = [k for k in combined_gamma_estimates.keys() if "_COUP_high_" in k]
+
+coupling_groups = {
+    "Low Coupling": low_coupling_conditions,
+    "High Coupling": high_coupling_conditions
+}
+
+# Define SNR order for sorting
+snr_levels = ["low", "high", "no_noise"]
+
+def group_conditions_by_snr_level(conditions):
+    """Sort conditions by SNR level (no_noise, low, high)"""
+    grouped = {snr: [] for snr in snr_levels}
+    for cond in conditions:
+        for snr in snr_levels:
+            if snr in cond:
+                grouped[snr].append(cond)
+    return grouped
+
+# Plot one figure per coupling level
+for coupling_level, conditions in coupling_groups.items():
+    if not conditions:  # skip empty groups
+        print(f"No conditions for {coupling_level}, skipping...")
+        continue
+    
+    # Group by SNR
+    grouped_conditions = group_conditions_by_snr_level(conditions)
+    # Flatten in desired order
+    conditions_ordered = grouped_conditions["low"] + grouped_conditions["high"] + grouped_conditions["no_noise"]
+    
+    subset_estimates = {k: combined_gamma_estimates[k] for k in conditions_ordered}
+    subset_targets = {k: combined_gamma_targets[k] for k in conditions_ordered}
+    subset_titles = {k: condition_display_titles[k] for k in conditions_ordered}
+    
+    print(f"Plotting recovery plot for {coupling_level} conditions: {list(subset_estimates.keys())}")
+
+    # Recovery plot on specific axis
+    fig_gamma = recovery_plot(subset_estimates, subset_targets, 
+                             parameter_display_titles=subset_titles, fig_height=9, fig_width=15, is_all_coupling=True)
+    fig_gamma.savefig(FIGURES_ROOT / f"recovery_plot_combined_gamma_{coupling_level}_{args.prefix}.png", dpi=300)
+    plt.close(fig_gamma)
 
 print(f"\n{'='*80}")
 print("Analysis complete for all conditions!")
