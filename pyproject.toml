@@ -25,6 +25,11 @@ dependencies = [
 gpu = [
   "jax[cuda12-local]==0.6.1; sys_platform == 'linux'",
 ]
+docs = [
+    "sphinx>=8.2.0",
+    "sphinx-book-theme>=1.1.4",
+    "myst-parser>=4.0.1",
+]
 
 [tool.uv]
 find-links = ["https://storage.googleapis.com/jax-releases/jax_cuda_releases.html"]
