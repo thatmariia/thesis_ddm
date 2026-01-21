@@ -1,5 +1,5 @@
 # Python
-__pycache__/
+**/__pycache__/
 *.py[cod]
 *.so
 *.egg-info/
@@ -14,7 +14,7 @@ ENV/
 .Python
 
 # macOS
-.DS_Store
+**/.DS_Store
 
 # Logs and databases
 *.log
@@ -30,10 +30,7 @@ ENV/
 archive/
 
 
-figures/
-
-directed_model/data/
-directed_model/results/
-
-integrative_model/data/
-integrative_model/checkpoints/
+**/figures/
+**/data/
+**/results/
+**/checkpoints/
