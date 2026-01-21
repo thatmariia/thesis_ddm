@@ -2,26 +2,36 @@
 name = "thesis-ddm"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "brunykrijgsman",email = "bruny_krijgsman@hotmail.com"}
-]
-license = {text = "Apache-2.0"}
 readme = "README.md"
-requires-python = ">=3.12,<4.0"
+requires-python = "==3.12.*"
+license = { text = "Apache-2.0" }
+authors = [{ name = "brunykrijgsman", email = "bruny_krijgsman@hotmail.com" }]
+
 dependencies = [
-    "bayesflow>=2.0.3",
-    "cmdstanpy>=1.2.5",
-    "ipykernel>=6.29.5",
-    # JAX - CPU version as base
-    "jax==0.6.1",
-    # Platform-specific JAX with GPU support
-    # "jax[cuda12-local]>=0.6.1 ; sys_platform == 'linux'",  # For Snellius (GPU)
-    "matplotlib>=3.10.3",
-    "numba>=0.61.2",
-    "numpy<=2.2.0",
-    "scikit-learn>=1.7.0",
-    "scipy>=1.15.3",
-    "statsmodels>=0.14.4",
-    "tensorflow>=2.19.0",
-    "tensorflow-metal>=1.2.0 ; sys_platform == 'darwin'",
+  "bayesflow>=2.0.3",
+  "cmdstanpy>=1.2.5",
+  "jax==0.6.1",                           # CPU baseline
+  "matplotlib>=3.10.3",
+  "numba>=0.61.2",
+  "numpy<=2.2.0",
+  "scikit-learn>=1.7.0",
+  "scipy>=1.15.3",
+  "statsmodels>=0.14.4",
+  "tensorflow>=2.19.0",
+  "tensorflow-metal>=1.2.0; sys_platform == 'darwin'",
 ]
+
+[dependency-groups]
+gpu = [
+  "jax[cuda12-local]==0.6.1; sys_platform == 'linux'",
+]
+
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ddm"]
+
+[tool.hatch.build.targets.editable]
+packages = ["src/ddm"]
