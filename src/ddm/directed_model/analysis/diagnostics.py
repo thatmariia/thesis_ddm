@@ -109,12 +109,14 @@ def plot_trace_grids(
 
     grouped: dict[str, list[tuple[int, str]]] = defaultdict(list)
 
+    wanted = set(params_of_interest)
+
     for col in param_cols:
         m = _PARAM_RE.match(col)
         if not m:
             continue
         base, idx = m.groups()
-        if base in set(params_of_interest):
+        if base in wanted:
             grouped[base].append((int(idx), col))
 
     figures: dict[str, plt.Figure] = {}
