@@ -100,8 +100,8 @@ def integrative_to_directed_ddm(integrative_data):
      """
 
     # Extract parameters for correlation computation
-    nparts = int(np.squeeze(integrative_data['nparts']))
-    ntrials = int(np.squeeze(integrative_data['ntrials']))
+    n_parts = int(np.squeeze(integrative_data['nparts']))
+    n_trials = int(np.squeeze(integrative_data['ntrials']))
     z_i = np.ravel(integrative_data['z'])
     mu_delta = np.ravel(integrative_data['mu_delta'])
     eta_delta = np.ravel(integrative_data['eta_delta'])
@@ -109,8 +109,8 @@ def integrative_to_directed_ddm(integrative_data):
 
     # Generate delta per trial
     delta = np.zeros_like(z_i)
-    corr_delta_z = np.zeros(nparts)
-    for p in range(nparts):
+    corr_delta_z = np.zeros(n_parts)
+    for p in range(n_parts):
         idx = participant == (p + 1)
         z_p = z_i[idx]
         delta_p = np.random.normal(loc=mu_delta[p], scale=eta_delta[p], size=len(z_p))
@@ -121,7 +121,7 @@ def integrative_to_directed_ddm(integrative_data):
             corr_delta_z[p] = 0
     
     # mu_z = 0 (assumption in directed model)
-    mu_z = np.zeros((1, nparts))
+    mu_z = np.zeros((1, n_parts))
 
     # sigma_z = sqrt(gamma^2 * eta_delta^2 + sigma^2)
     sigma_z = np.sqrt(integrative_data['gamma']**2 * integrative_data['eta_delta']**2 + integrative_data['sigma']**2)

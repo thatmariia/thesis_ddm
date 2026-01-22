@@ -92,7 +92,7 @@ def predict_trials_plugin_means(
         b = posterior_mean(posterior_df, "b", pid)
 
         sim_y, _, sim_z = simul_directed_ddm(
-            ntrials=1,
+            n_trials=1,
             alpha=alpha,
             tau=tau,
             beta=beta,
@@ -348,7 +348,7 @@ def posterior_predictive_check_comprehensive(
         n_trials_p = int(np.sum(train_participants == (p + 1)))
 
         sim_y, _, sim_z = simul_directed_ddm(
-            ntrials=n_trials_p,
+            n_trials=n_trials_p,
             alpha=float(true_params["alpha"][p]),
             tau=float(true_params["tau"][p]),
             beta=float(true_params["beta"][p]),
