@@ -39,6 +39,22 @@ def _require_column(df: pd.DataFrame, col: str) -> None:
         )
 
 
+def posterior_mean_any(
+    df: pd.DataFrame, params: Sequence[str], participant: int | str
+) -> float:
+    """
+    Try multiple parameter base names and return the first one found.
+    Example: ["lambda", "lambda_param"]
+    """
+    last_err: Exception | None = None
+    for p in params:
+        col = f"{p}[{participant}]"
+        if col in df.columns:
+            return float(df[col].mean())
+        last_err = KeyError(f"Missing posterior column '{col}'")
+    raise last_err if last_err is not None else KeyError("No params provided")
+
+
 def posterior_mean(df: pd.DataFrame, param: str, participant: int | str) -> float:
     """
     Posterior mean of a per-participant param, from columns like alpha[1], alpha[2], ...
@@ -72,8 +88,7 @@ def predict_trials_plugin_means(
         sigma_z = posterior_mean(posterior_df, "sigma_z", pid)
 
         # Stan uses "lambda" but python sometimes uses lambda_param
-        # Your posterior cols are lambda[pid] in most code.
-        lambda_param = posterior_mean(posterior_df, "lambda", pid)
+        lambda_param = posterior_mean_any(posterior_df, ["lambda", "lambda_param"], pid)
         b = posterior_mean(posterior_df, "b", pid)
 
         sim_y, _, sim_z = simul_directed_ddm(
