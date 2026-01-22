@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -32,7 +31,7 @@ def generate_directed_ddm_data(
     coupling: Coupling = "base",
     dist: NoiseDist = "base",
     prior_cfg: PriorConfig = PriorConfig(),
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> tuple[dict[str, np.ndarray], DirectedDDMDataset]:
     """
     Generate a full dataset for the directed DDM.

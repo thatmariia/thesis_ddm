@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+from collections.abc import Literal
 import numpy as np
 
 Coupling = Literal["low", "high", "base", "zero"]
@@ -41,7 +41,7 @@ def sample_lambda_param(
     n_parts: int,
     coupling: Coupling,
     *,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """Sample lambda_param according to coupling condition."""
     if n_parts <= 0:

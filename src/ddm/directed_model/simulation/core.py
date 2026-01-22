@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+from collections.abc import Literal
 import numpy as np
 
 NoiseDist = Literal["gaussian", "laplace", "uniform", "base"]
@@ -48,7 +48,7 @@ def simul_directed_ddm(
     noise_distribution: NoiseDist = "gaussian",
     n_steps: int = 10_000,
     step_length: float = 0.001,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Simulate signed response times for a directed DDM where drift depends on latent z.

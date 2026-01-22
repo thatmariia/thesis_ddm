@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Optional
+from collections.abc import Literal
 import numpy as np
 from scipy.stats import truncnorm
 
@@ -36,7 +36,7 @@ def sample_prior_params(
     n_parts: int,
     *,
     cfg: PriorConfig = PriorConfig(),
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> dict[str, np.ndarray]:
     """
     Sample participant-level parameters from priors.
