@@ -378,8 +378,7 @@ def posterior_predictive_check_comprehensive(
 
     print("Generating new out-of-sample data using true parameters...")
 
-    current_state = np.random.get_state()
-    np.random.seed(oos_seed)
+    rng = np.random.default_rng(oos_seed)
 
     test_y_list: list[float] = []
     test_z_list: list[float] = []
@@ -398,13 +397,12 @@ def posterior_predictive_check_comprehensive(
             mu_z=float(true_params["mu_z"][p]),
             sigma_z=float(true_params["sigma_z"][p]),
             b=float(true_params["b"][p]),
+            rng=rng,
         )
 
         test_y_list.extend([float(v) for v in sim_y])
         test_z_list.extend([float(v) for v in sim_z])
         test_p_list.extend([p + 1] * n_trials_p)
-
-    np.random.set_state(current_state)
 
     test_y = np.asarray(test_y_list, dtype=float)
     test_z = np.asarray(test_z_list, dtype=float)
@@ -417,11 +415,13 @@ def posterior_predictive_check_comprehensive(
         posterior_df=posterior_df,
         participants=train_participants,
         n_trials=len(train_z),
+        seed=oos_seed + 1,
     )
     pred_y_test, pred_z_test = predict_trials_plugin_means(
         posterior_df=posterior_df,
         participants=test_participants,
         n_trials=len(test_z),
+        seed=oos_seed + 2,
     )
 
     # Plot: 2x2
@@ -469,37 +469,30 @@ def posterior_predictive_check_comprehensive(
 
     fig.tight_layout()
 
-    # --- Print the same summary stats style ---
-    print("In-sample metrics for y:")
-    print(
-        f"Mean observed y: {np.mean(train_y):.2f}, predicted: {np.mean(pred_y_train):.2f}"
-    )
-    print(
-        f"Variance observed y: {np.var(train_y):.2f}, predicted: {np.var(pred_y_train):.2f}"
-    )
+    summary = {
+        "in_sample": {
+            "mean_y_obs": float(np.mean(train_y)),
+            "mean_y_pred": float(np.mean(pred_y_train)),
+            "var_y_obs": float(np.var(train_y)),
+            "var_y_pred": float(np.var(pred_y_train)),
+            "mean_z_obs": float(np.mean(train_z)),
+            "mean_z_pred": float(np.mean(pred_z_train)),
+            "var_z_obs": float(np.var(train_z)),
+            "var_z_pred": float(np.var(pred_z_train)),
+        },
+        "out_of_sample": {
+            "mean_y_obs": float(np.mean(test_y)),
+            "mean_y_pred": float(np.mean(pred_y_test)),
+            "var_y_obs": float(np.var(test_y)),
+            "var_y_pred": float(np.var(pred_y_test)),
+            "mean_z_obs": float(np.mean(test_z)),
+            "mean_z_pred": float(np.mean(pred_z_test)),
+            "var_z_obs": float(np.var(test_z)),
+            "var_z_pred": float(np.var(pred_z_test)),
+        },
+    }
 
-    print("In-sample metrics for z:")
-    print(
-        f"Mean observed z: {np.mean(train_z):.2f}, predicted: {np.mean(pred_z_train):.2f}"
-    )
-    print(
-        f"Variance observed z: {np.var(train_z):.2f}, predicted: {np.var(pred_z_train):.2f}"
-    )
-
-    print("Out-of-sample metrics for y:")
-    print(
-        f"Mean observed y: {np.mean(test_y):.2f}, predicted: {np.mean(pred_y_test):.2f}"
-    )
-    print(
-        f"Variance observed y: {np.var(test_y):.2f}, predicted: {np.var(pred_y_test):.2f}"
-    )
-
-    print("Out-of-sample metrics for z:")
-    print(
-        f"Mean observed z: {np.mean(test_z):.2f}, predicted: {np.mean(pred_z_test):.2f}"
-    )
-    print(
-        f"Variance observed z: {np.var(test_z):.2f}, predicted: {np.var(pred_z_test):.2f}"
-    )
+    print("In-sample metrics:", summary["in_sample"])
+    print("Out-of-sample metrics:", summary["out_of_sample"])
 
     return fig
