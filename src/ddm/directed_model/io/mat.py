@@ -8,13 +8,14 @@ import scipy.io as sio
 from ..simulation.dataset import DirectedDDMDataset
 
 
-def save_dataset_mat(
-    dataset: DirectedDDMDataset, params: dict[str, np.ndarray], filepath: Path
-) -> Path:
-    filepath = Path(filepath)
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-
-    mat_dict: dict[str, Any] = {
+def to_stan_mat_dict(
+    dataset: DirectedDDMDataset, params: dict[str, np.ndarray]
+) -> dict[str, Any]:
+    """
+    Create a MATLAB/Stan-compatible dict with field names used there.
+    Keeps naming differences isolated to IO.
+    """
+    return {
         **params,
         "rt": dataset.rt,
         "acc": dataset.acc,
@@ -27,7 +28,15 @@ def save_dataset_mat(
         "z": dataset.z,
         "condition": dataset.condition,
     }
-    sio.savemat(filepath, mat_dict)
+
+
+def save_dataset_mat(
+    dataset: DirectedDDMDataset, params: dict[str, np.ndarray], filepath: Path
+) -> Path:
+    filepath = Path(filepath)
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+
+    sio.savemat(filepath, to_stan_mat_dict(dataset, params))
     return filepath
 
 
