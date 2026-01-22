@@ -23,12 +23,12 @@ class IntegrativeParams:
         return np.array(
             [
                 self.alpha,
-              self.tau,
-              self.beta,
-              self.mu_delta,
-              self.eta_delta,
-              self.gamma,
-              self.sigma,
+                self.tau,
+                self.beta,
+                self.mu_delta,
+                self.eta_delta,
+                self.gamma,
+                self.sigma,
             ],
             dtype=dtype,
         )
