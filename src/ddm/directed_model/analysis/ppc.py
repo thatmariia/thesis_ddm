@@ -150,7 +150,10 @@ def predict_trials_plugin_means(
 
 
 def run_ppc(
-    posterior_df: pd.DataFrame, conditions: Sequence[PPCCondition]
+    posterior_df: pd.DataFrame,
+    conditions: Sequence[PPCCondition],
+    *,
+    seed: int | None = None,
 ) -> list[PPCResult]:
     """
     Run plug-in-mean PPC for multiple conditions.
@@ -161,6 +164,7 @@ def run_ppc(
             posterior_df=posterior_df,
             participants=cond.participants,
             n_trials=len(cond.z),
+            seed=seed,
         )
         results.append(
             PPCResult(
@@ -292,6 +296,8 @@ def posterior_predictive_check_baseline(
     true_z: np.ndarray,
     conditions_data: list[dict[str, Any]] | None = None,
     use_seaborn: bool = True,
+    *,
+    seed: int | None = None,
 ) -> plt.Figure:
     """
     Replicates your baseline PPC function:
@@ -325,7 +331,7 @@ def posterior_predictive_check_baseline(
             )
         )
 
-    results = run_ppc(posterior_df=posterior_df, conditions=conditions)
+    results = run_ppc(posterior_df=posterior_df, conditions=conditions, seed=seed)
     fig = plot_ppc(results, use_seaborn=use_seaborn)
 
     # Replicate print summary block
