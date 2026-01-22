@@ -40,72 +40,111 @@ def _require_column(df: pd.DataFrame, col: str) -> None:
         )
 
 
-def posterior_mean_any(
-    df: pd.DataFrame, params: Sequence[str], participant: int | str
-) -> float:
+def canonicalize_posterior_columns(posterior_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Try multiple parameter base names and return the first one found.
-    Example: ["lambda", "lambda_param"]
+    Normalize posterior column naming to Python-side conventions.
+    - Stan uses lambda[...] but Python prefers lambda_param[...]
     """
-    last_err: Exception | None = None
+    # avoid copying unless needed
+    if any(c.startswith("lambda[") for c in posterior_df.columns):
+        rename_map = {
+            c: c.replace("lambda[", "lambda_param[")
+            for c in posterior_df.columns
+            if c.startswith("lambda[")
+        }
+        posterior_df = posterior_df.rename(columns=rename_map)
+    return posterior_df
+
+
+def _parse_indexed_param_columns(df: pd.DataFrame, base: str) -> dict[int, str]:
+    """
+    Map participant id -> column name for columns like base[1], base[2], ...
+    """
+    out: dict[int, str] = {}
+    prefix = f"{base}["
+    for c in df.columns:
+        if not c.startswith(prefix):
+            continue
+        # fast parse: base[123]
+        try:
+            pid = int(c[len(prefix) : c.index("]")])
+        except Exception as e:
+            raise ValueError(f"Bad indexed column format: {c}") from e
+        out[pid] = c
+    return out
+
+
+def posterior_means_by_participant(
+    posterior_df: pd.DataFrame,
+    params: Sequence[str],
+) -> dict[str, dict[int, float]]:
+    """
+    Compute posterior means for per-participant params.
+    Returns: means[param][pid] = float
+    """
+    means: dict[str, dict[int, float]] = {}
     for p in params:
-        col = f"{p}[{participant}]"
-        if col in df.columns:
-            return float(df[col].mean())
-        last_err = KeyError(f"Missing posterior column '{col}'")
-    raise last_err if last_err is not None else KeyError("No params provided")
-
-
-def posterior_mean(df: pd.DataFrame, param: str, participant: int | str) -> float:
-    """
-    Posterior mean of a per-participant param, from columns like alpha[1], alpha[2], ...
-    """
-    col = f"{param}[{participant}]"
-    _require_column(df, col)
-    return float(df[col].mean())
+        colmap = _parse_indexed_param_columns(posterior_df, p)
+        if not colmap:
+            raise KeyError(f"No posterior columns found for '{p}[i]'")
+        means[p] = {pid: float(posterior_df[col].mean()) for pid, col in colmap.items()}
+    return means
 
 
 def predict_trials_plugin_means(
     posterior_df: pd.DataFrame,
     participants: Sequence[int | str],
     n_trials: int,
+    *,
+    seed: int | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Predict y,z by simulating one trial per observed trial using plug-in posterior means.
+    Predict y,z by simulating one synthetic dataset using plug-in posterior means.
 
-    This replicates your original generate_predicted_data() approach.
+    Faster version:
+    - precomputes participant-level posterior means once
+    - simulates in batches per participant
+    - returns predictions in the original trial order
     """
+    if n_trials != len(participants):
+        raise ValueError("n_trials must equal len(participants)")
+
+    posterior_df = canonicalize_posterior_columns(posterior_df)
+
+    # force participant ids to int for dict indexing
+    pids = np.asarray(participants, dtype=int)
+
+    needed = ["alpha", "tau", "beta", "eta", "mu_z", "sigma_z", "lambda_param", "b"]
+    means = posterior_means_by_participant(posterior_df, needed)
+
     y_pred = np.empty(n_trials, dtype=float)
     z_pred = np.empty(n_trials, dtype=float)
 
-    for i in range(n_trials):
-        pid = participants[i]
+    rng = np.random.default_rng(seed) if seed is not None else None
 
-        alpha = posterior_mean(posterior_df, "alpha", pid)
-        tau = posterior_mean(posterior_df, "tau", pid)
-        beta = posterior_mean(posterior_df, "beta", pid)
-        eta = posterior_mean(posterior_df, "eta", pid)
-        mu_z = posterior_mean(posterior_df, "mu_z", pid)
-        sigma_z = posterior_mean(posterior_df, "sigma_z", pid)
-
-        # Stan uses "lambda" but python sometimes uses lambda_param
-        lambda_param = posterior_mean_any(posterior_df, ["lambda", "lambda_param"], pid)
-        b = posterior_mean(posterior_df, "b", pid)
+    # simulate per participant in one call
+    unique_pids = np.unique(pids)
+    for pid in unique_pids:
+        idx = np.where(pids == pid)[0]
+        n_p = int(idx.size)
+        if n_p == 0:
+            continue
 
         sim_y, _, sim_z = simul_directed_ddm(
-            n_trials=1,
-            alpha=alpha,
-            tau=tau,
-            beta=beta,
-            eta=eta,
-            lambda_param=lambda_param,
-            mu_z=mu_z,
-            sigma_z=sigma_z,
-            b=b,
+            n_trials=n_p,
+            alpha=means["alpha"][pid],
+            tau=means["tau"][pid],
+            beta=means["beta"][pid],
+            eta=means["eta"][pid],
+            mu_z=means["mu_z"][pid],
+            sigma_z=means["sigma_z"][pid],
+            lambda_param=means["lambda_param"][pid],
+            b=means["b"][pid],
+            rng=rng,
         )
 
-        y_pred[i] = float(sim_y[0])
-        z_pred[i] = float(sim_z[0])
+        y_pred[idx] = sim_y
+        z_pred[idx] = sim_z
 
     return y_pred, z_pred
 
