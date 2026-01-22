@@ -56,17 +56,10 @@ def plot_recovery(
     param_name: str,
     ci_lower: np.ndarray | None = None,
     ci_upper: np.ndarray | None = None,
+    *,
+    ax: plt.Axes | None = None,
+    figsize: tuple[float, float] = (7, 7),
 ) -> plt.Figure:
-    """
-    Parameter recovery plot.
-
-    - If CI bounds are provided, draws error bars.
-    - Otherwise draws scatter with a fitted line (no seaborn dependency).
-
-    Returns
-    -------
-    matplotlib Figure
-    """
     true_vals = np.atleast_1d(true_vals).astype(float)
     est_vals = np.atleast_1d(estimated_vals).astype(float)
 
@@ -77,11 +70,14 @@ def plot_recovery(
 
     corr = (
         float(np.corrcoef(true_vals, est_vals)[0, 1])
-       if true_vals.size > 1
-       else float("nan")
+        if true_vals.size > 1
+        else float("nan")
     )
 
-    fig, ax = plt.subplots(figsize=(7, 7))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.figure
 
     if ci_lower is not None and ci_upper is not None:
         ci_lower = np.atleast_1d(ci_lower).astype(float)
@@ -93,8 +89,6 @@ def plot_recovery(
         ax.errorbar(est_vals, true_vals, xerr=xerr, fmt="o", alpha=0.8)
     else:
         ax.scatter(true_vals, est_vals, alpha=0.8)
-
-        # Best-fit line (simple linear regression)
         if true_vals.size > 1:
             m, b = np.polyfit(true_vals, est_vals, 1)
             xs = np.linspace(true_vals.min(), true_vals.max(), 100)
