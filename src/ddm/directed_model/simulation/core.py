@@ -45,7 +45,7 @@ def simul_directed_ddm(
     sigma_z: float = 1.0,
     lambda_param: float = 0.7,
     b: float = 0.5,
-    noise_distribution: NoiseDist = "gaussian",
+    dist: NoiseDist = "gaussian",
     n_steps: int = 10_000,
     step_length: float = 0.001,
     rng: np.random.Generator | None = None,
@@ -83,7 +83,7 @@ def simul_directed_ddm(
         n_trials=n_trials,
         mu_z=mu_z,
         sigma_z=sigma_z,
-        noise_distribution=noise_distribution,
+        noise_distribution=dist,
         rng=rng,
     )
 

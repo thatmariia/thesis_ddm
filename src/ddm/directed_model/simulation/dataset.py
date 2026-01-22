@@ -86,7 +86,7 @@ def generate_directed_ddm_data(
             eta=float(params["eta"][p]),
             mu_z=float(params["mu_z"][p]),
             sigma_z=float(sigma_z_p),
-            noise_distribution=dist,
+            dist=dist,
             lambda_param=float(params["lambda_param"][p]),
             b=float(params["b"][p]),
             rng=rng,
