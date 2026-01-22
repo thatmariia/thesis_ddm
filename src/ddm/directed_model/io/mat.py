@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 import scipy.io as sio
 
-from ..simulation.dataset import DirectedDDMDataset
+from ..simulation import DirectedDDMDataset
 
 
 def to_stan_mat_dict(

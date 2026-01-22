@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from ..simulation.core import simul_directed_ddm
+from ..simulation import simul_directed_ddm
 
 
 @dataclass(frozen=True)
