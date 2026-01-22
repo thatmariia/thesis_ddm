@@ -25,7 +25,7 @@ def load_mat_for_stan(mat_file_path: Path) -> StanData:
     z = np.squeeze(genparam["z"]).astype(float)
     participant = np.squeeze(genparam["participant"]).astype(int)
     min_rt = np.squeeze(genparam["minRT"]).astype(float)
-    n_parts = int(np.squeeze(genparam["nparts"]).item())
+    n_participants = int(np.squeeze(genparam["nparts"]).item())
 
     valid = np.isfinite(y) & ~np.isnan(y)
     y = y[valid]
@@ -36,17 +36,17 @@ def load_mat_for_stan(mat_file_path: Path) -> StanData:
     if y.shape[0] != z.shape[0] or y.shape[0] != participant.shape[0]:
         raise ValueError("After filtering, y/z/participant lengths do not match")
 
-    if min_rt.shape[0] != n_parts:
-        raise ValueError(f"minRT length {min_rt.shape[0]} != nparts {n_parts}")
+    if min_rt.shape[0] != n_participants:
+        raise ValueError(f"minRT length {min_rt.shape[0]} != nparts {n_participants}")
 
     if participant.min(initial=1) < 1:
         raise ValueError("participant indices must be 1..nparts (found < 1)")
-    if participant.max(initial=0) > n_parts:
+    if participant.max(initial=0) > n_participants:
         raise ValueError("participant indices must be 1..nparts (found > nparts)")
 
     return {
         "N": int(y.size),
-        "nparts": n_parts,
+        "nparts": n_participants,
         "y": y,
         "participant": participant,
         "minRT": min_rt,

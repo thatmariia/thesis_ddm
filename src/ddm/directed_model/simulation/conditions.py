@@ -38,29 +38,29 @@ def adjust_sigma_z(
 
 
 def sample_lambda_param(
-    n_parts: int,
+    n_participants: int,
     coupling: Coupling,
     *,
     rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """Sample lambda_param according to coupling condition."""
-    if n_parts <= 0:
-        raise ValueError("n_parts must be positive")
+    if n_participants <= 0:
+        raise ValueError("n_participants must be positive")
 
     rng = rng or np.random.default_rng()
 
     if coupling == "base":
-        return rng.uniform(-3.0, 3.0, size=n_parts)
+        return rng.uniform(-3.0, 3.0, size=n_participants)
 
     if coupling == "low":
-        return rng.uniform(-0.2, 0.2, size=n_parts)
+        return rng.uniform(-0.2, 0.2, size=n_participants)
 
     if coupling == "high":
-        signs = rng.choice([-1.0, 1.0], size=n_parts)
-        magnitudes = rng.uniform(2.0, 3.0, size=n_parts)
+        signs = rng.choice([-1.0, 1.0], size=n_participants)
+        magnitudes = rng.uniform(2.0, 3.0, size=n_participants)
         return signs * magnitudes
 
     if coupling == "zero":
-        return np.zeros(n_parts, dtype=float)
+        return np.zeros(n_participants, dtype=float)
 
     raise ValueError(f"Unknown coupling: {coupling}")

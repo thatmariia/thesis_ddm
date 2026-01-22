@@ -384,16 +384,17 @@ def posterior_predictive_check_comprehensive(
     test_z_list: list[float] = []
     test_p_list: list[int] = []
 
+    lambda_key = "lambda_param" if "lambda_param" in true_params else "lambda"
+
     for p in range(nparts):
         n_trials_p = int(np.sum(train_participants == (p + 1)))
-
         sim_y, _, sim_z = simul_directed_ddm(
             n_trials=n_trials_p,
             alpha=float(true_params["alpha"][p]),
             tau=float(true_params["tau"][p]),
             beta=float(true_params["beta"][p]),
             eta=float(true_params["eta"][p]),
-            lambda_param=float(true_params["lambda"][p]),
+            lambda_param=float(true_params[lambda_key][p]),
             mu_z=float(true_params["mu_z"][p]),
             sigma_z=float(true_params["sigma_z"][p]),
             b=float(true_params["b"][p]),

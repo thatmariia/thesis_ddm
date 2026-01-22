@@ -77,7 +77,6 @@ def plot_trace_grids(
         "eta",
         "mu_z",
         "sigma_z",
-        "lambda",
         "lambda_param",
         "b",
     ),

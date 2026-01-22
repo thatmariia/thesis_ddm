@@ -37,7 +37,7 @@ def extract_parameter_samples(
 
     cols.sort(key=_idx)
 
-    # df[cols] -> (n_draws, n_parts), transpose -> (n_parts, n_draws)
+    # df[cols] -> (n_draws, n_participants), transpose -> (n_participants, n_draws)
     samples = df[cols].to_numpy().T
 
     if samples.shape[0] != n_participants:

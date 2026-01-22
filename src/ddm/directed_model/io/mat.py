@@ -11,17 +11,21 @@ from ..simulation import DirectedDDMDataset
 def to_stan_mat_dict(
     dataset: DirectedDDMDataset, params: dict[str, np.ndarray]
 ) -> dict[str, Any]:
-    """
-    Create a MATLAB/Stan-compatible dict with field names used there.
-    Keeps naming differences isolated to IO.
-    """
+    params_out = dict(params)
+
+    # naming compatibility: expose both lambda_param and lambda
+    if "lambda_param" in params_out and "lambda" not in params_out:
+        params_out["lambda"] = params_out["lambda_param"]
+    if "lambda" in params_out and "lambda_param" not in params_out:
+        params_out["lambda_param"] = params_out["lambda"]
+
     return {
-        **params,
+        **params_out,
         "rt": dataset.rt,
         "acc": dataset.acc,
         "y": dataset.y,
         "participant": dataset.participant,
-        "nparts": dataset.n_parts,
+        "nparts": dataset.n_participants,
         "ntrials": dataset.n_trials,
         "N": int(dataset.y.size),
         "minRT": dataset.min_rt,

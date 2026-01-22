@@ -6,7 +6,13 @@ import numpy as np
 
 from .core import simul_directed_ddm, NoiseDist
 from .priors import PriorConfig, sample_prior_params
-from .conditions import SNRLevel, SNRTransform, Coupling, adjust_sigma_z, sample_lambda_param
+from .conditions import (
+    SNRLevel,
+    SNRTransform,
+    Coupling,
+    adjust_sigma_z,
+    sample_lambda_param,
+)
 
 
 @dataclass(frozen=True)
@@ -15,9 +21,9 @@ class DirectedDDMDataset:
     rt: np.ndarray
     acc: np.ndarray
     z: np.ndarray
-    participant: np.ndarray  # 1..n_parts
+    participant: np.ndarray  # 1..n_participants
     min_rt: np.ndarray  # per participant
-    n_parts: int
+    n_participants: int
     n_trials: int
     condition: str
 
@@ -25,7 +31,7 @@ class DirectedDDMDataset:
 def generate_directed_ddm_data(
     *,
     n_trials: int = 100,
-    n_parts: int = 100,
+    n_participants: int = 100,
     snr: SNRLevel = "base",
     snr_transform: SNRTransform = "add",
     coupling: Coupling = "base",
@@ -39,25 +45,25 @@ def generate_directed_ddm_data(
     Returns
     -------
     params : dict[str, np.ndarray]
-        Participant-level parameters (arrays of shape (n_parts,))
+        Participant-level parameters (arrays of shape (n_participants,))
     dataset : DirectedDDMDataset
         Trial-level simulated data
     """
     if n_trials <= 0:
         raise ValueError("n_trials must be positive")
-    if n_parts <= 0:
-        raise ValueError("n_parts must be positive")
+    if n_participants <= 0:
+        raise ValueError("n_participants must be positive")
 
     rng = rng or np.random.default_rng()
 
-    params = sample_prior_params(n_parts, cfg=prior_cfg, rng=rng)
+    params = sample_prior_params(n_participants, cfg=prior_cfg, rng=rng)
 
     # Override lambda_param according to coupling condition
-    params["lambda_param"] = sample_lambda_param(n_parts, coupling, rng=rng)
+    params["lambda_param"] = sample_lambda_param(n_participants, coupling, rng=rng)
 
     condition_key = f"SNR_{snr}_{snr_transform}_COUP_{coupling}_DIST_{dist}"
 
-    N = n_trials * n_parts
+    N = n_trials * n_participants
     y = np.zeros(N, dtype=float)
     rt = np.zeros(N, dtype=float)
     acc = np.zeros(N, dtype=float)
@@ -65,7 +71,7 @@ def generate_directed_ddm_data(
     z_all = np.zeros(N, dtype=float)
 
     idx = 0
-    for p in range(n_parts):
+    for p in range(n_participants):
         sigma_z_p = adjust_sigma_z(
             float(params["sigma_z"][p]),
             snr_level=snr,
@@ -97,8 +103,8 @@ def generate_directed_ddm_data(
         z_all[start:end] = z_sim
         idx = end
 
-    min_rt = np.full(n_parts, np.nan, dtype=float)
-    for p in range(n_parts):
+    min_rt = np.full(n_participants, np.nan, dtype=float)
+    for p in range(n_participants):
         rts_p = rt[participant == (p + 1)]
         valid = np.isfinite(rts_p)
         if np.any(valid):
@@ -111,7 +117,7 @@ def generate_directed_ddm_data(
         z=z_all,
         participant=participant,
         min_rt=min_rt,
-        n_parts=n_parts,
+        n_participants=n_participants,
         n_trials=n_trials,
         condition=condition_key,
     )
