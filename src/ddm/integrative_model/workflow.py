@@ -8,7 +8,9 @@ import bayesflow as bf
 from bayesflow.adapters import Adapter
 from bayesflow.simulators import make_simulator
 
-from .simulation import prior, likelihood
+from ddm.utils import make_rng
+from .simulation import prior as base_prior
+from .simulation import likelihood as base_likelihood
 
 
 @dataclass(frozen=True)
@@ -18,33 +20,67 @@ class WorkflowConfig:
     summary_dim: int = 8
 
 
-def default_meta_fn(cfg: WorkflowConfig) -> dict[str, int]:
-    # np.random.randint high is exclusive -> use max+1 to make inclusive
-    n_obs = int(np.random.randint(cfg.n_obs_min, cfg.n_obs_max + 1))
-    return {"n_obs": n_obs}
-
-
 def create_workflow(
     cfg: WorkflowConfig = WorkflowConfig(),
+    *,
+    seed: int | None = None,
     meta_fn: Callable[[], dict[str, int]] | None = None,
 ) -> tuple[bf.BasicWorkflow, bf.simulators.Simulator, Adapter]:
     """
     Creates and configures the BayesFlow workflow for the integrative DDM.
-    Returns (workflow, simulator, adapter).
+
+    Reproducibility policy:
+    - If seed is provided, all generated datasets (prior + likelihood + variable n_obs) are reproducible.
+    - We do NOT add seed to the data; it's only used internally to control Numba RNG safely.
     """
     if cfg.n_obs_min < 1 or cfg.n_obs_max < cfg.n_obs_min:
         raise ValueError(f"Invalid n_obs range: [{cfg.n_obs_min}, {cfg.n_obs_max}]")
 
-    if meta_fn is None:
-        meta_fn = lambda: default_meta_fn(cfg)
+    rng = make_rng(seed)
 
-    simulator = make_simulator([prior, likelihood], meta_fn=meta_fn)
+    # meta: reproducible n_obs if seed provided
+    if meta_fn is None:
+        def meta_fn() -> dict[str, int]:
+            n_obs = int(rng.integers(cfg.n_obs_min, cfg.n_obs_max + 1))
+            return {"n_obs": n_obs}
+
+    def prior_wrapped() -> dict[str, float]:
+        return base_prior(rng=rng)
+
+    # Wrap likelihood to:
+    # - draw a deterministic seed per dataset from rng
+    # - use it to isolate Numba randomness
+    def likelihood_wrapped(
+        alpha: float,
+        tau: float,
+        beta: float,
+        mu_delta: float,
+        eta_delta: float,
+        gamma: float,
+        sigma: float,
+        n_obs: int,
+    ) -> dict[str, np.ndarray]:
+        # one seed per dataset call
+        sim_seed = int(rng.integers(0, 2**32 - 1))
+        return base_likelihood(
+            alpha=alpha,
+            tau=tau,
+            beta=beta,
+            mu_delta=mu_delta,
+            eta_delta=eta_delta,
+            gamma=gamma,
+            sigma=sigma,
+            n_obs=int(n_obs),
+            seed=sim_seed,
+        )
+
+    simulator = make_simulator([prior_wrapped, likelihood_wrapped], meta_fn=meta_fn)
 
     # Networks
     summary_network = bf.networks.SetTransformer(summary_dim=cfg.summary_dim)
     inference_network = bf.networks.CouplingFlow()
 
-    # Adapter pipeline
+    # Adapter pipeline (unchanged)
     adapter = (
         Adapter()
         .broadcast("n_obs", to="choicert")
