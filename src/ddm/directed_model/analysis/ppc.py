@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Optional, Sequence
+from typing import Any
+from collections.abc import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from directed_model.simulation import simul_directed_ddm
+from ..simulation.core import simul_directed_ddm
 
 
 @dataclass(frozen=True)
@@ -239,7 +240,7 @@ def posterior_predictive_check_baseline(
     participants: np.ndarray,
     true_y: np.ndarray,
     true_z: np.ndarray,
-    conditions_data: Optional[list[dict[str, Any]]] = None,
+    conditions_data: list[dict[str, Any]] | None = None,
     use_seaborn: bool = True,
 ) -> plt.Figure:
     """
