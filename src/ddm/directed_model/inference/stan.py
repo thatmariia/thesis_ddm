@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, Optional
+from collections.abc import Literal, TypedDict
 import numpy as np
 import cmdstanpy
 import scipy.io as sio
@@ -9,7 +9,16 @@ import scipy.io as sio
 StanModelName = Literal["directed_ddm", "directed_ddm_cross"]
 
 
-def load_mat_for_stan(mat_file_path: Path) -> dict:
+class StanData(TypedDict):
+    N: int
+    nparts: int
+    y: np.ndarray
+    participant: np.ndarray
+    minRT: np.ndarray
+    z: np.ndarray
+
+
+def load_mat_for_stan(mat_file_path: Path) -> StanData:
     genparam = sio.loadmat(mat_file_path)
 
     y = np.squeeze(genparam["y"]).astype(float)
@@ -22,6 +31,18 @@ def load_mat_for_stan(mat_file_path: Path) -> dict:
     y = y[valid]
     z = z[valid]
     participant = participant[valid]
+
+    # basic sanity checks
+    if y.shape[0] != z.shape[0] or y.shape[0] != participant.shape[0]:
+        raise ValueError("After filtering, y/z/participant lengths do not match")
+
+    if min_rt.shape[0] != n_parts:
+        raise ValueError(f"minRT length {min_rt.shape[0]} != nparts {n_parts}")
+
+    if participant.min(initial=1) < 1:
+        raise ValueError("participant indices must be 1..nparts (found < 1)")
+    if participant.max(initial=0) > n_parts:
+        raise ValueError("participant indices must be 1..nparts (found > nparts)")
 
     return {
         "N": int(y.size),
@@ -37,7 +58,7 @@ def fit_directed_ddm(
     mat_file_path: Path,
     *,
     model: StanModelName = "directed_ddm",
-    stan_dir: Optional[Path] = None,
+    stan_dir: Path | None = None,
     chains: int = 4,
     parallel_chains: int = 4,
     iter_sampling: int = 1000,
