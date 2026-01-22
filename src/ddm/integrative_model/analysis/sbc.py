@@ -8,6 +8,8 @@ from scipy.stats import binom
 
 from bayesflow.utils import prepare_plot_data, add_titles_and_labels, prettify_subplots
 
+from ...utils import optional_import
+
 
 def calibration_histogram(
     estimates: Mapping[str, np.ndarray] | np.ndarray,
@@ -61,12 +63,8 @@ def calibration_histogram(
     endpoints = binom.interval(binomial_interval, num_trials, 1 / num_bins)
     mean = num_trials / num_bins
 
-    try:
-        import seaborn as sns  # type: ignore
-
-        use_sns = True
-    except Exception:
-        use_sns = False
+    sns = optional_import("seaborn")
+    use_sns = sns is not None
 
     for j, ax in enumerate(plot_data["axes"].flat):
         if j in skip_indices or j >= ranks.shape[1]:

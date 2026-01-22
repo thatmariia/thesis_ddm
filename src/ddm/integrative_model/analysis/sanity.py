@@ -4,6 +4,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
+from ...utils import optional_import
+
 
 def simulated_data_check(
     sim_data: dict, rt_path: str | Path, p300_path: str | Path
@@ -19,11 +21,8 @@ def simulated_data_check(
     choicert = np.asarray(sim_data["choicert"]).flatten()
     z = np.asarray(sim_data["z"]).flatten()
 
-    try:
-        import seaborn as sns  # type: ignore
-        use_sns = True
-    except Exception:
-        use_sns = False
+    sns = optional_import("seaborn")
+    use_sns = sns is not None
 
     # RTs
     plt.figure(figsize=(8, 6))

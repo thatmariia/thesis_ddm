@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from ..simulation import simul_directed_ddm
+from ...utils import optional_import
 
 
 @dataclass(frozen=True)
@@ -181,12 +182,7 @@ def plot_ppc(
     """
     fig, axes = plt.subplots(1, 2, figsize=(15, 6))
 
-    sns = None
-    if use_seaborn:
-        try:
-            import seaborn as sns  # type: ignore
-        except Exception:
-            sns = None
+    sns = optional_import("seaborn") if use_seaborn else None
 
     for res in results:
         if sns is not None:
@@ -384,12 +380,7 @@ def posterior_predictive_check_comprehensive(
     )
 
     # Plot: 2x2
-    sns = None
-    if use_seaborn:
-        try:
-            import seaborn as sns  # type: ignore
-        except Exception:
-            sns = None
+    sns = optional_import("seaborn") if use_seaborn else None
 
     fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 
