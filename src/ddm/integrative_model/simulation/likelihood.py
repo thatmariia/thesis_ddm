@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ddm.utils.rng import temp_numpy_seed
+from ...utils import temp_numpy_seed
 from .core import batch_simulator
 from .priors import IntegrativeParams
 
