@@ -8,7 +8,7 @@ import bayesflow as bf
 from bayesflow.adapters import Adapter
 from bayesflow.simulators import make_simulator
 
-from ddm.utils import make_rng
+from ddm.utils.rng import make_rng
 from .simulation import prior as base_prior
 from .simulation import likelihood as base_likelihood
 
