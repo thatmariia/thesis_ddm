@@ -12,7 +12,7 @@ MuZMode = Literal["random", "zero"]
 @dataclass(frozen=True)
 class DirectedParams:
     """
-    Directed DDM parameters (participant-level).
+    Directed DDM parameters (participant-level). 
     """
 
     alpha: float
