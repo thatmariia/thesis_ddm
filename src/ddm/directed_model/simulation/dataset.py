@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .core import simul_directed_ddm, NoiseDist
-from .priors import PriorConfig, sample_prior_params
+from .priors import PriorConfig, sample_prior_arrays
 from .conditions import (
     SNRLevel,
     SNRTransform,
@@ -56,7 +56,7 @@ def generate_directed_ddm_data(
 
     rng = rng or np.random.default_rng()
 
-    params = sample_prior_params(n_participants, cfg=prior_cfg, rng=rng)
+    params = sample_prior_arrays(n_parts, cfg=prior_cfg, rng=rng)
 
     # Override lambda_param according to coupling condition
     params["lambda_param"] = sample_lambda_param(n_participants, coupling, rng=rng)
