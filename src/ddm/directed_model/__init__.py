@@ -9,6 +9,7 @@ from .simulation import (
     SNRTransform,
 )
 from .inference.stan import fit_directed_ddm
+from .workflow import WorkflowConfig, create_workflow
 
 __all__ = [
     "DirectedDDMDataset",
@@ -20,4 +21,6 @@ __all__ = [
     "Coupling",
     "SNRLevel",
     "SNRTransform",
+    "WorkflowConfig",
+    "create_workflow",
 ]
