@@ -9,8 +9,15 @@ from bayesflow.adapters import Adapter
 from bayesflow.simulators import make_simulator
 
 from ..utils import make_rng
-from .simulation import prior as base_prior
-from .simulation import likelihood as base_likelihood
+# from .simulation import prior as base_prior
+# from .simulation import likelihood as base_likelihood
+
+from .simulation.priors import (
+    sample_prior_dict,
+    IntegrativeParams,
+    PriorConfig as IntegrativePriorConfig,
+)
+from .simulation.likelihood import likelihood as likelihood_from_params
 
 
 @dataclass(frozen=True)
@@ -18,6 +25,7 @@ class WorkflowConfig:
     n_obs_min: int = 30
     n_obs_max: int = 1000  # inclusive
     summary_dim: int = 8
+    prior: IntegrativePriorConfig = IntegrativePriorConfig()
 
 
 def create_workflow(
@@ -45,7 +53,8 @@ def create_workflow(
             return {"n_obs": n_obs}
 
     def prior_wrapped() -> dict[str, float]:
-        return base_prior(rng=rng)
+        # BayesFlow wants dicts, so return dict here
+        return sample_prior_dict(cfg=cfg.prior, rng=rng)
 
     # Wrap likelihood to:
     # - draw a deterministic seed per dataset from rng
@@ -60,9 +69,8 @@ def create_workflow(
         sigma: float,
         n_obs: int,
     ) -> dict[str, np.ndarray]:
-        # one seed per dataset call
         sim_seed = int(rng.integers(0, 2**32 - 1))
-        return base_likelihood(
+        params = IntegrativeParams(
             alpha=alpha,
             tau=tau,
             beta=beta,
@@ -70,9 +78,8 @@ def create_workflow(
             eta_delta=eta_delta,
             gamma=gamma,
             sigma=sigma,
-            n_obs=int(n_obs),
-            seed=sim_seed,
         )
+        return likelihood_from_params(params=params, n_obs=int(n_obs), seed=sim_seed)
 
     simulator = make_simulator([prior_wrapped, likelihood_wrapped], meta_fn=meta_fn)
 

@@ -8,13 +8,7 @@ from .priors import IntegrativeParams
 
 
 def likelihood(
-    alpha: float,
-    tau: float,
-    beta: float,
-    mu_delta: float,
-    eta_delta: float,
-    gamma: float,
-    sigma: float,
+    params: IntegrativeParams,
     n_obs: int,
     *,
     seed: int | None = None,
@@ -22,14 +16,12 @@ def likelihood(
     """
     BayesFlow-compatible likelihood simulator.
     """
-    params = IntegrativeParams(
-        alpha, tau, beta, mu_delta, eta_delta, gamma, sigma
-    ).as_array()
+    params_arr = params.as_array()
 
     if seed is None:
-        choicert, z = batch_simulator(params, int(n_obs))
+        choicert, z = batch_simulator(params_arr, int(n_obs))
         return {"choicert": choicert, "z": z}
 
     with temp_numpy_seed(int(seed)):
-        choicert, z = batch_simulator(params, int(n_obs))
+        choicert, z = batch_simulator(params_arr, int(n_obs))
         return {"choicert": choicert, "z": z}
